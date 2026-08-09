@@ -420,6 +420,75 @@ func (s *Store) ListDeviceSNs() ([]string, error) {
 	return sns, rows.Err()
 }
 
+// ExportRow is a single fully-denormalised reading, used by the CSV export.
+type ExportRow struct {
+	DeviceSN        string
+	Time            time.Time
+	PPVTotal        float64
+	LoadPower       float64
+	SOC             float64
+	ChargePower     float64
+	DischargePower  float64
+	GridImportPower float64
+	GridExportPower float64
+	GridImportToday float64
+	GridExportToday float64
+}
+
+// ExportAllReadings returns every stored reading, oldest first. If deviceSN is
+// empty, readings for all devices are returned.
+func (s *Store) ExportAllReadings(deviceSN string) ([]ExportRow, error) {
+	q := `
+		SELECT device_sn, recorded_at, ppv_total, load_power, soc,
+		       charge_power, discharge_power,
+		       grid_import_power, grid_export_power,
+		       grid_import_today, grid_export_today
+		FROM readings`
+	var args []any
+	if deviceSN != "" {
+		q += " WHERE device_sn = ?"
+		args = append(args, deviceSN)
+	}
+	q += " ORDER BY device_sn, recorded_at"
+
+	rows, err := s.db.Query(q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("querying export rows: %w", err)
+	}
+	defer rows.Close()
+
+	var out []ExportRow
+	for rows.Next() {
+		var r ExportRow
+		var recordedAt string
+		var soc, charge, discharge, importPower, exportPower, importToday, exportToday sql.NullFloat64
+		err := rows.Scan(&r.DeviceSN, &recordedAt, &r.PPVTotal, &r.LoadPower, &soc,
+			&charge, &discharge, &importPower, &exportPower, &importToday, &exportToday)
+		if err != nil {
+			return nil, fmt.Errorf("scanning export row: %w", err)
+		}
+		for _, layout := range []string{
+			"2006-01-02 15:04:05 +0000 UTC",
+			"2006-01-02 15:04:05",
+			"2006-01-02T15:04:05Z",
+		} {
+			if t, err := time.Parse(layout, recordedAt); err == nil {
+				r.Time = t
+				break
+			}
+		}
+		r.SOC = soc.Float64
+		r.ChargePower = charge.Float64
+		r.DischargePower = discharge.Float64
+		r.GridImportPower = importPower.Float64
+		r.GridExportPower = exportPower.Float64
+		r.GridImportToday = importToday.Float64
+		r.GridExportToday = exportToday.Float64
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
 // ReadingsSummary returns a short summary string for a device reading.
 func ReadingsSummary(deviceSN string, data map[string]any) string {
 	ppv := mapGetFloat(data, "ppv")
