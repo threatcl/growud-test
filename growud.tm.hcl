@@ -141,6 +141,12 @@ threatmodel "Growud" {
       implemented    = false
       risk_reduction = 40
     }
+
+    control "Encrypt the SQLite readings store at rest" {
+      description    = "Open growud.db through an encrypting SQLite build (e.g. SQLCipher) keyed from the OS keychain, so a copied database file does not reveal the household's occupancy and consumption history."
+      implemented    = false
+      risk_reduction = 30
+    }
   }
 
   threat "Local API cache files tampered with by another local user" {
