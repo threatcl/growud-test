@@ -1,0 +1,24 @@
+name: threat-drift
+on:
+  pull_request:
+
+concurrency:
+  group: threat-drift-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    env:
+      THREATCL_API_URL: https://test-api.threatcl.com
+    steps:
+      - uses: actions/checkout@v7
+      - uses: threatcl/drift-action@cloud-mode-test
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          threatcl-api-token: ${{ secrets.THREATCL_API_TOKEN }}
