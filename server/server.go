@@ -65,7 +65,7 @@ func (s *Server) Start() error {
 	s.srv = &http.Server{
 		Addr:              addr,
 		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
+		ReadHeaderTimeout: 500 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
 		IdleTimeout:       60 * time.Second,
