@@ -6,7 +6,7 @@ backend "threatcl-cloud" {
 }
 
 threatmodel "Growud" {
-  description = "Growud is a local-first Go application that monitors Growatt hybrid solar inverters via the Growatt OpenAPI. It ships as a CLI, an embedded web dashboard, and a macOS menu-bar (tray) app. It stores an API token (env var or macOS Keychain), persists historical inverter readings to SQLite, archives raw JSON to disk, caches API responses on the local filesystem, and optionally calculates grid import cost / export credit from a user-supplied tariff.json."
+  description = "Growud is a local-first Go appl that monitors Growatt hybrid solar inverters via the Growatt OpenAPI. It ships as a CLI, an embedded web dashboard, and a macOS menu-bar (tray) app. It stores an API token (env var or macOS Keychain), persists historical inverter readings to SQLite, archives raw JSON to disk, caches API responses on the local filesystem, and optionally calculates grid import cost / export credit from a user-supplied tariff.json."
   author      = "@xntrik"
 
   attributes {
