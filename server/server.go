@@ -3,12 +3,14 @@ package server
 import (
 	"context"
 	_ "embed"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/xntrik/growud/growatt"
@@ -58,6 +60,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/summary", s.handleAPISummary)
 	mux.HandleFunc("/api/readings", s.handleAPIReadings)
 	mux.HandleFunc("/api/cost", s.handleAPICost)
+	mux.HandleFunc("/api/export", s.handleAPIExport)
 
 	addr := fmt.Sprintf("%s:%d", s.bind, s.port)
 	fmt.Printf("Growud server listening on http://%s\n", addr)
@@ -460,6 +463,54 @@ func (s *Server) handleAPICost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, result)
+}
+
+// handleAPIExport streams the entire readings history as CSV so users can pull
+// their data into a spreadsheet. With no ?device= parameter it exports every
+// device in the store.
+func (s *Server) handleAPIExport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	deviceSN := r.URL.Query().Get("device")
+
+	rows, err := s.store.ExportAllReadings(deviceSN)
+	if err != nil {
+		log.Printf("Error exporting readings for %q: %v", deviceSN, err)
+		http.Error(w, "failed to export readings", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="growud-readings.csv"`)
+
+	cw := csv.NewWriter(w)
+	defer cw.Flush()
+
+	cw.Write([]string{
+		"device_sn", "recorded_at", "ppv_total_w", "load_power_w", "soc_pct",
+		"charge_power_w", "discharge_power_w",
+		"grid_import_power_w", "grid_export_power_w",
+		"grid_import_today_kwh", "grid_export_today_kwh",
+	})
+
+	for _, row := range rows {
+		cw.Write([]string{
+			row.DeviceSN,
+			row.Time.Format("2006-01-02T15:04:05"),
+			strconv.FormatFloat(row.PPVTotal, 'f', 2, 64),
+			strconv.FormatFloat(row.LoadPower, 'f', 2, 64),
+			strconv.FormatFloat(row.SOC, 'f', 2, 64),
+			strconv.FormatFloat(row.ChargePower, 'f', 2, 64),
+			strconv.FormatFloat(row.DischargePower, 'f', 2, 64),
+			strconv.FormatFloat(row.GridImportPower, 'f', 2, 64),
+			strconv.FormatFloat(row.GridExportPower, 'f', 2, 64),
+			strconv.FormatFloat(row.GridImportToday, 'f', 3, 64),
+			strconv.FormatFloat(row.GridExportToday, 'f', 3, 64),
+		})
+	}
 }
 
 func handleFavicon(w http.ResponseWriter, r *http.Request) {

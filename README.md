@@ -169,6 +169,7 @@ When running as a **macOS .app bundle**, standard macOS directories are used:
 | `GET /api/summary` | JSON plant/device summary with current values |
 | `GET /api/readings?date=YYYY-MM-DD&device=SN` | Historical readings for charting |
 | `GET /api/cost?from=YYYY-MM-DD&to=YYYY-MM-DD&device=SN` | Grid import cost and export credit (requires `tariff.json`) |
+| `GET /api/export?device=SN` | Full readings history as CSV. Omit `device` to export every device |
 
 ## Building
 
