@@ -14,11 +14,9 @@ permissions:
 jobs:
   drift:
     runs-on: ubuntu-latest
-    env:
-      THREATCL_API_URL: https://test-api.threatcl.com
     steps:
       - uses: actions/checkout@v7
-      - uses: threatcl/drift-action@cloud-mode-test
+      - uses: threatcl/drift-action@v1
         with:
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
           threatcl-api-token: ${{ secrets.THREATCL_API_TOKEN }}
